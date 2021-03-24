@@ -1,0 +1,166 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: argowf-chaos-vm-delete-
+  namespace: litmus
+spec:
+  entrypoint: argowf-chaos
+  serviceAccountName: argo-chaos
+  securityContext:
+    runAsUser: 1000
+    runAsNonRoot: true
+  arguments:
+    parameters:
+      - name: adminModeNamespace
+        value: "litmus"
+  templates:
+    - name: argowf-chaos
+      steps:
+        - - name: install-experiment
+            template: install-experiment
+        - - name: run-chaos
+            template: run-chaos
+        - - name: revert-chaos
+            template: revert-chaos
+
+    - name: install-experiment
+      inputs:
+        artifacts:
+          - name: install-experiment
+            path: /tmp/vm-delete.yaml
+            raw:
+              data: |
+                apiVersion: litmuschaos.io/v1alpha1
+                description:
+                  message: |
+                    stops vm instance for a chaos duration
+                kind: ChaosExperiment
+                metadata:
+                  name: vm-delete
+                  version: 0.1.0 
+                spec:
+                  definition:
+                    scope: Namespaced
+                               permissions:
+                      - apiGroups:
+                          - ""
+                          - "apps"
+                          - "batch"
+                          - "litmuschaos.io"
+                        resources:
+                          - "deployments"
+                          - "jobs"
+                          - "pods"
+                          - "pods/log"
+                          - "events"
+                          - "configmaps"
+                          - "chaosengines"
+                          - "chaosexperiments"
+                          - "chaosresults"
+                          - "secrets"
+                        verbs:
+                          - "create"
+                          - "list"
+                          - "get"
+                          - "patch"
+                          - "update"
+                          - "delete"
+                      - apiGroups:
+                          - ""
+                        resources: 
+                          - "nodes"
+                        verbs:
+                          - "get"
+                          - "list"
+                    image: "delphinejoyneer/ansible-runner:v10"
+                    imagePullPolicy: IfNotPresent
+                    args:
+                    - -c
+                    - ansible-playbook ./experiments/vmware/vm-delete/vm-delete_ansible_logic.yml -i /etc/ansible/hosts -vv; exit 0
+                    command:
+                    - /bin/bash
+                    env:
+                    - name: VCENTERSERVER
+                      valueFrom:
+                        secretKeyRef:
+                          name: vcenter-secret
+                          key: VCENTERSERVER
+
+                    - name: VCENTERUSER
+                      valueFrom:
+                        secretKeyRef:
+                          name: vcenter-secret
+                          key: VCENTERUSER
+
+                    - name: VCENTERPASS
+                      valueFrom:
+                        secretKeyRef:
+                          name: vcenter-secret
+                          key: VCENTERPASS
+
+                    - name: ANSIBLE_STDOUT_CALLBACK
+                      value: 'default'
+
+                    - name: TOTAL_CHAOS_DURATION
+                      value: '' 
+
+                    - name: LIB
+                      value: ''
+
+                    - name: RAMP_TIME
+                      value: ''
+      
+                    labels:
+                      experiment: vm-delete 
+
+      container:
+        image: alpine/k8s:1.18.2
+        command: [sh, -c]
+        args:
+          [
+            "kubectl apply -f /tmp/vm-delete.yaml -n {{workflow.parameters.adminModeNamespace}}",
+          ]
+
+    - name: run-chaos
+      inputs:
+        artifacts:
+          - name: run-chaos
+            path: /tmp/chaosengine.yaml
+            raw:
+              data: |
+                apiVersion: litmuschaos.io/v1alpha1
+                kind: ChaosEngine
+                metadata:
+                  name: kube-proxy-vm-delete-chaos
+                  namespace: {{workflow.parameters.adminModeNamespace}}
+                spec:
+                  jobCleanUpPolicy: retain
+                  monitoring: false
+                  annotationCheck: 'false'
+                  engineState: 'active'
+                  chaosServiceAccount: litmus-admin
+                  experiments:
+                    - name: vm-delete
+                      spec:
+                        components:
+                          env:
+                            - name: TOTAL_CHAOS_DURATION
+                              value: "60"
+                            - name: CHAOS_INTERVAL
+                              value: "10"
+                            - name: FORCE
+                              value: "false"
+                            - name: APP_VM_MOID
+                              value: 'vm-5365'                               
+      container:
+        image: litmuschaos/litmus-checker:latest
+        args: ["-file=/tmp/chaosengine.yaml","-saveName=/tmp/engine-name"]
+
+    - name: revert-chaos
+      container:
+        image: alpine/k8s:1.18.2
+        command: [sh, -c]
+        args:
+          [
+            "kubectl delete chaosengine kube-proxy-vm-delete-chaos -n {{workflow.parameters.adminModeNamespace}}",
+          ]
