@@ -9,7 +9,7 @@ spec:
   definition:
     scope: Namespaced
     permissions: [{'apiGroups': ['', 'batch', 'litmuschaos.io'], 'resources': ['secrets' ,'jobs', 'pods', 'chaosengines', 'chaosexperiments', 'chaosresults','évents'], 'verbs': ['create', 'list', 'get', 'update', 'patch', 'delete']}]
-    image: "delphinejoyneer/ansible-runner:v10"
+    image: "delphinejoyneer/ansible-runner:v11"
     imagePullPolicy: IfNotPresent
     args:
     - -c
