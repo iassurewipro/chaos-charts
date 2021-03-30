@@ -31,21 +31,5 @@ spec:
             - name: APP_VM_MOID
               value: 'vm-5365'     
               
-            - name: VCENTERSERVER
-              valueFrom:
-                secretKeyRef:
-                  name: vcenter-secret
-                  key: VCENTERSERVER
 
-            - name: VCENTERUSER
-              valueFrom:
-                secretKeyRef:
-                  name: vcenter-secret
-                  key: VCENTERUSER
-
-            - name: VCENTERPASS
-              valueFrom:
-                secretKeyRef:
-                  name: vcenter-secret
-                  key: VCENTERPASS
               
