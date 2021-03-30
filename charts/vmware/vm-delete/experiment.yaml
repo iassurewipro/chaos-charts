@@ -19,19 +19,19 @@ spec:
     env:
     - name: VCENTERSERVER
       valueFrom:
-        secretKeyRef:
+        configMapKeyRef:
           name: vcenter-secret
           key: VCENTERSERVER
 
     - name: VCENTERUSER
       valueFrom:
-        secretKeyRef:
+        configMapKeyRef:
           name: vcenter-secret
           key: VCENTERUSER
 
     - name: VCENTERPASS
       valueFrom:
-        secretKeyRef:
+        configMapKeyRef:
           name: vcenter-secret
           key: VCENTERPASS
 
