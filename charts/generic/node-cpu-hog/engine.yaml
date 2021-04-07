@@ -29,7 +29,3 @@ spec:
             
             - name: NODE_CPU_CORE
               value: ''
-            
-            # ENTER THE COMMA SEPARATED TARGET NODES NAME
-            - name: TARGET_NODES
-              value: ''
