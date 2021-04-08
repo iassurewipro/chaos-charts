@@ -4,6 +4,10 @@ metadata:
   name: nginx-chaos
   namespace: default
 spec:
+  appinfo:
+    appns: default
+    applabel: app=nginx
+    appkind: deployment
   annotationCheck: 'false'
   engineState: 'active'
   chaosServiceAccount: ec2-terminate-sa
