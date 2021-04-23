@@ -36,7 +36,7 @@ spec:
           - "update"
           - "delete"
     image: "litmuschaos/go-runner:latest"
-    imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
     args:
     - -c
     - ./experiments -name ec2-terminate
